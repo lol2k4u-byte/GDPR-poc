@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bestillingsflow</title>
+
+<style>
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        overflow: hidden;
+        background: white;
+    }
+
+    #canvas {
+        position: relative;
+        width: 100vw;
+        height: 100vh;
+        background: white;
+    }
+
+    #addButton {
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        z-index: 20;
+
+        padding: 14px 22px;
+        border: none;
+        border-radius: 6px;
+
+        background: #1677ff;
+        color: white;
+
+        font-size: 16px;
+        font-weight: bold;
+
+        cursor: pointer;
+    }
+
+    #addButton:hover {
+        background: #0958d9;
+    }
+
+    /* ---------- TABELLER ---------- */
+
+    #tables {
+        position: absolute;
+        top: 20px;
+        right: 25px;
+
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+
+        z-index: 10;
+    }
+
+    .tableNode {
+        width: 150px;
+        height: 48px;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        background: #c9f2bd;
+        border: 2px solid #222;
+
+        cursor: pointer;
+        user-select: none;
+    }
+
+    /* ---------- BESTILLINGER ---------- */
+
+    .orderNode {
+        position: absolute;
+
+        width: 100px;
+        height: 100px;
+
+        border-radius: 50%;
+
+        background: #b8d8ff;
+        border: 2px solid #222;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        text-align: center;
+        font-weight: bold;
+
+        cursor: pointer;
+        user-select: none;
+
+        z-index: 10;
+    }
+
+    /* ---------- VALGT NODE ---------- */
+
+    .selected {
+        outline: 4px solid #1677ff;
+        outline-offset: 3px;
+    }
+
+    /* ---------- MODAL ---------- */
+
+    #modalBackground {
+        position: fixed;
+        inset: 0;
+
+        background: rgba(0,0,0,0.15);
+
+        display: none;
+
+        z-index: 100;
+    }
+
+    #modal {
+        position: absolute;
+
+        top: 85px;
+        left: 25px;
+
+        width: 350px;
+
+        background: white;
+
+        border: 1px solid #ccc;
+        border-radius: 8px;
+
+        padding: 20px;
+
+        box-shadow: 0 8px 30px rgba(0,0,0,0.20);
+    }
+
+    #modal h2 {
+        margin-top: 0;
+    }
+
+    #search {
+        width: 100%;
+
+        padding: 12px;
+
+        font-size: 16px;
+
+        border: 1px solid #aaa;
+        border-radius: 5px;
+    }
+
+    #results {
+        margin-top: 10px;
+
+        max-height: 300px;
+
+        overflow-y: auto;
+    }
+
+    .result {
+        padding: 12px;
+
+        cursor: pointer;
+
+        border-bottom: 1px solid #eee;
+    }
+
+    .result:hover {
+        background: #e8f2ff;
+    }
+
+    /* ---------- SVG FORBINDELSER ---------- */
+
+    #connections {
+        position: absolute;
+
+        inset: 0;
+
+        width: 100%;
+        height: 100%;
+
+        pointer-events: none;
+
+        z-index: 1;
+    }
+
+</style>
+</head>
+
+<body>
+
+<div id="canvas">
+
+    <button id="addButton">
+        + Tilføj bestilling
+    </button>
+
+    <svg id="connections">
+
+        <defs>
+            <marker
+                id="arrow"
+                markerWidth="10"
+                markerHeight="10"
+                refX="9"
+                refY="3"
+                orient="auto"
+                markerUnits="strokeWidth">
+
+                <path
+                    d="M0,0 L0,6 L9,3 z"
+                    fill="#222">
+                </path>
+
+            </marker>
+        </defs>
+
+    </svg>
+
+    <div id="tables"></div>
+
+</div>
+
+
+<!-- Modal -->
+
+<div id="modalBackground">
+
+    <div id="modal">
+
+        <h2>Vælg bestilling</h2>
+
+        <input
+            id="search"
+            type="text"
+            placeholder="Søg efter bestillingsnummer..."
+        >
+
+        <div id="results"></div>
+
+    </div>
+
+</div>
+
+
+<script>
+
+const canvas = document.getElementById("canvas");
+const tablesContainer = document.getElementById("tables");
+const svg = document.getElementById("connections");
+
+const modalBackground =
+    document.getElementById("modalBackground");
+
+const search =
+    document.getElementById("search");
+
+const results =
+    document.getElementById("results");
+
+
+/* -------------------------------------------------
+   DATA
+-------------------------------------------------- */
+
+const orders = [
+    1,2,3,4,5,6,7,8,9,10,
+    11,12,13,14,15,16,17,18,19,20,
+    27,37,47,57,67,70
+];
+
+const tableNames = [
+    "A","B","C","D","E","F","G",
+    "H","I","J","K","L","M","N"
+];
+
+const connections = [];
+
+let selectedStart = null;
+
+let orderCounter = 0;
+
+
+/* -------------------------------------------------
+   TABELLER
+-------------------------------------------------- */
+
+tableNames.forEach(name => {
+
+    const table = document.createElement("div");
+
+    table.className = "tableNode";
+
+    table.textContent = "Tabel " + name;
+
+    table.dataset.type = "table";
+    table.dataset.id = name;
+
+    table.addEventListener("click", () => {
+        nodeClicked(table);
+    });
+
+    tablesContainer.appendChild(table);
+
+});
+
+
+/* -------------------------------------------------
+   ADD BESTILLING
+-------------------------------------------------- */
+
+document
+    .getElementById("addButton")
+    .addEventListener("click", () => {
+
+        modalBackground.style.display = "block";
+
+        search.value = "";
+
+        showOrders("");
+
+        setTimeout(() => search.focus(), 50);
+
+    });
+
+
+/* -------------------------------------------------
+   SØGNING
+-------------------------------------------------- */
+
+search.addEventListener("input", () => {
+
+    showOrders(search.value);
+
+});
+
+
+function showOrders(filter) {
+
+    results.innerHTML = "";
+
+    const filtered = orders.filter(number =>
+        number
+            .toString()
+            .includes(filter)
+    );
+
+    filtered.forEach(number => {
+
+        const row =
+            document.createElement("div");
+
+        row.className = "result";
+
+        row.textContent =
+            "Bestilling " + number;
+
+        row.addEventListener("click", () => {
+
+            addOrder(number);
+
+            modalBackground.style.display =
+                "none";
+
+        });
+
+        results.appendChild(row);
+
+    });
+
+}
+
+
+/* -------------------------------------------------
+   OPRET BESTILLING
+-------------------------------------------------- */
+
+function addOrder(number) {
+
+    const order =
+        document.createElement("div");
+
+    order.className = "orderNode";
+
+    order.dataset.type = "order";
+    order.dataset.id = number;
+
+    order.innerHTML =
+        "Bestilling<br>" + number;
+
+
+    /*
+        Nye bestillinger placeres fra venstre
+        og forskydes lidt for hver bestilling.
+    */
+
+    order.style.left =
+        (100 + orderCounter * 130) + "px";
+
+    order.style.top =
+        (180 + (orderCounter % 4) * 130) + "px";
+
+    orderCounter++;
+
+
+    order.addEventListener("click", () => {
+
+        nodeClicked(order);
+
+    });
+
+
+    canvas.appendChild(order);
+
+}
+
+
+/* -------------------------------------------------
+   NODE KLIK
+-------------------------------------------------- */
+
+function nodeClicked(node) {
+
+    /*
+        Første klik = start
+    */
+
+    if (!selectedStart) {
+
+        selectedStart = node;
+
+        node.classList.add("selected");
+
+        return;
+
+    }
+
+
+    /*
+        Klikker man på samme node igen
+    */
+
+    if (selectedStart === node) {
+
+        selectedStart.classList.remove("selected");
+
+        selectedStart = null;
+
+        return;
+
+    }
+
+
+    /*
+        Regel:
+
+        En BESTILLING må IKKE komme efter
+        en TABEL.
+
+        table -> order er derfor ugyldig.
+    */
+
+    if (
+        selectedStart.dataset.type === "table" &&
+        node.dataset.type === "order"
+    ) {
+
+        alert(
+            "En bestilling må ikke komme efter en tabel."
+        );
+
+        selectedStart.classList.remove("selected");
+
+        selectedStart = null;
+
+        return;
+
+    }
+
+
+    createConnection(
+        selectedStart,
+        node
+    );
+
+
+    selectedStart.classList.remove("selected");
+
+    selectedStart = null;
+
+}
+
+
+/* -------------------------------------------------
+   FORBINDELSE
+-------------------------------------------------- */
+
+function createConnection(start, end) {
+
+    connections.push({
+        start,
+        end
+    });
+
+    drawConnections();
+
+}
+
+
+/* -------------------------------------------------
+   TEGN ALLE FORBINDELSER
+-------------------------------------------------- */
+
+function drawConnections() {
+
+    /*
+        Fjern gamle linjer
+    */
+
+    svg
+        .querySelectorAll(".connection")
+        .forEach(line => line.remove());
+
+
+    connections.forEach(connection => {
+
+        const startRect =
+            connection.start.getBoundingClientRect();
+
+        const endRect =
+            connection.end.getBoundingClientRect();
+
+        const canvasRect =
+            canvas.getBoundingClientRect();
+
+
+        const x1 =
+            startRect.left
+            - canvasRect.left
+            + startRect.width / 2;
+
+        const y1 =
+            startRect.top
+            - canvasRect.top
+            + startRect.height / 2;
+
+
+        const x2 =
+            endRect.left
+            - canvasRect.left
+            + endRect.width / 2;
+
+        const y2 =
+            endRect.top
+            - canvasRect.top
+            + endRect.height / 2;
+
+
+        const line =
+            document.createElementNS(
+                "http://www.w3.org/2000/svg",
+                "line"
+            );
+
+
+        line.setAttribute("x1", x1);
+        line.setAttribute("y1", y1);
+
+        line.setAttribute("x2", x2);
+        line.setAttribute("y2", y2);
+
+        line.setAttribute(
+            "stroke",
+            "#222"
+        );
+
+        line.setAttribute(
+            "stroke-width",
+            "2"
+        );
+
+        line.setAttribute(
+            "marker-end",
+            "url(#arrow)"
+        );
+
+        line.classList.add(
+            "connection"
+        );
+
+
+        svg.appendChild(line);
+
+    });
+
+}
+
+
+/* -------------------------------------------------
+   RESIZE
+-------------------------------------------------- */
+
+window.addEventListener(
+    "resize",
+    drawConnections
+);
+
+
+/* -------------------------------------------------
+   LUK MODAL VED KLIK UDENFOR
+-------------------------------------------------- */
+
+modalBackground.addEventListener(
+    "click",
+    event => {
+
+        if (
+            event.target ===
+            modalBackground
+        ) {
+
+            modalBackground.style.display =
+                "none";
+
+        }
+
+    }
+);
+
+</script>
+
+</body>
+</html>
