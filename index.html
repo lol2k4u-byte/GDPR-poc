@@ -3,9 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <title>Bestillingsflow</title>
 
 <style>
+
     * {
         box-sizing: border-box;
     }
@@ -17,20 +19,33 @@
         background: white;
     }
 
+    /* ========================================
+       CANVAS
+       ======================================== */
+
     #canvas {
         position: relative;
         width: 100vw;
         height: 100vh;
         background: white;
+        overflow: hidden;
+        touch-action: none;
     }
+
+
+    /* ========================================
+       ADD KNAP
+       ======================================== */
 
     #addButton {
         position: absolute;
         top: 20px;
         left: 20px;
-        z-index: 20;
+
+        z-index: 50;
 
         padding: 14px 22px;
+
         border: none;
         border-radius: 6px;
 
@@ -47,21 +62,14 @@
         background: #0958d9;
     }
 
-    /* ---------- TABELLER ---------- */
 
-    #tables {
-        position: absolute;
-        top: 20px;
-        right: 25px;
-
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-
-        z-index: 10;
-    }
+    /* ========================================
+       TABELLER
+       ======================================== */
 
     .tableNode {
+        position: absolute;
+
         width: 150px;
         height: 48px;
 
@@ -70,13 +78,27 @@
         justify-content: center;
 
         background: #c9f2bd;
+
         border: 2px solid #222;
 
-        cursor: pointer;
+        font-weight: 500;
+
+        cursor: grab;
+
         user-select: none;
+        touch-action: none;
+
+        z-index: 10;
     }
 
-    /* ---------- BESTILLINGER ---------- */
+    .tableNode:active {
+        cursor: grabbing;
+    }
+
+
+    /* ========================================
+       BESTILLINGER
+       ======================================== */
 
     .orderNode {
         position: absolute;
@@ -87,6 +109,7 @@
         border-radius: 50%;
 
         background: #b8d8ff;
+
         border: 2px solid #222;
 
         display: flex;
@@ -94,25 +117,39 @@
         justify-content: center;
 
         text-align: center;
+
         font-weight: bold;
 
-        cursor: pointer;
+        cursor: grab;
+
         user-select: none;
+        touch-action: none;
 
         z-index: 10;
     }
 
-    /* ---------- VALGT NODE ---------- */
+    .orderNode:active {
+        cursor: grabbing;
+    }
+
+
+    /* ========================================
+       VALGT STARTNODE
+       ======================================== */
 
     .selected {
         outline: 4px solid #1677ff;
-        outline-offset: 3px;
+        outline-offset: 4px;
     }
 
-    /* ---------- MODAL ---------- */
+
+    /* ========================================
+       MODAL BAGGRUND
+       ======================================== */
 
     #modalBackground {
         position: fixed;
+
         inset: 0;
 
         background: rgba(0,0,0,0.15);
@@ -121,6 +158,11 @@
 
         z-index: 100;
     }
+
+
+    /* ========================================
+       MODAL
+       ======================================== */
 
     #modal {
         position: absolute;
@@ -137,12 +179,39 @@
 
         padding: 20px;
 
-        box-shadow: 0 8px 30px rgba(0,0,0,0.20);
+        box-shadow:
+            0 8px 30px
+            rgba(0,0,0,0.20);
     }
 
-    #modal h2 {
-        margin-top: 0;
+    #modalHeader {
+        display: flex;
+
+        justify-content: space-between;
+        align-items: center;
+
+        margin-bottom: 15px;
     }
+
+    #modalHeader h2 {
+        margin: 0;
+
+        font-size: 20px;
+    }
+
+    #closeModal {
+        border: none;
+        background: transparent;
+
+        font-size: 24px;
+
+        cursor: pointer;
+    }
+
+
+    /* ========================================
+       SØGEFELT
+       ======================================== */
 
     #search {
         width: 100%;
@@ -153,7 +222,18 @@
 
         border: 1px solid #aaa;
         border-radius: 5px;
+
+        outline: none;
     }
+
+    #search:focus {
+        border-color: #1677ff;
+    }
+
+
+    /* ========================================
+       SØGERESULTATER
+       ======================================== */
 
     #results {
         margin-top: 10px;
@@ -161,6 +241,11 @@
         max-height: 300px;
 
         overflow-y: auto;
+
+        border:
+            1px solid #eee;
+
+        border-radius: 5px;
     }
 
     .result {
@@ -168,14 +253,30 @@
 
         cursor: pointer;
 
-        border-bottom: 1px solid #eee;
+        border-bottom:
+            1px solid #eee;
+    }
+
+    .result:last-child {
+        border-bottom: none;
     }
 
     .result:hover {
         background: #e8f2ff;
     }
 
-    /* ---------- SVG FORBINDELSER ---------- */
+    .noResults {
+        padding: 15px;
+
+        color: #777;
+
+        text-align: center;
+    }
+
+
+    /* ========================================
+       SVG FORBINDELSER
+       ======================================== */
 
     #connections {
         position: absolute;
@@ -195,15 +296,22 @@
 
 <body>
 
+
 <div id="canvas">
+
+    <!-- ADD BESTILLING -->
 
     <button id="addButton">
         + Tilføj bestilling
     </button>
 
+
+    <!-- SVG TIL PILE -->
+
     <svg id="connections">
 
         <defs>
+
             <marker
                 id="arrow"
                 markerWidth="10"
@@ -219,22 +327,33 @@
                 </path>
 
             </marker>
+
         </defs>
 
     </svg>
 
-    <div id="tables"></div>
-
 </div>
 
 
-<!-- Modal -->
+<!-- ========================================
+     MODAL
+     ======================================== -->
 
 <div id="modalBackground">
 
     <div id="modal">
 
-        <h2>Vælg bestilling</h2>
+        <div id="modalHeader">
+
+            <h2>
+                Vælg bestilling
+            </h2>
+
+            <button id="closeModal">
+                ×
+            </button>
+
+        </div>
 
         <input
             id="search"
@@ -251,9 +370,15 @@
 
 <script>
 
-const canvas = document.getElementById("canvas");
-const tablesContainer = document.getElementById("tables");
-const svg = document.getElementById("connections");
+/* ==========================================
+   ELEMENTER
+   ========================================== */
+
+const canvas =
+    document.getElementById("canvas");
+
+const svg =
+    document.getElementById("connections");
 
 const modalBackground =
     document.getElementById("modalBackground");
@@ -264,357 +389,162 @@ const search =
 const results =
     document.getElementById("results");
 
+const addButton =
+    document.getElementById("addButton");
 
-/* -------------------------------------------------
+const closeModal =
+    document.getElementById("closeModal");
+
+
+/* ==========================================
    DATA
--------------------------------------------------- */
+   ========================================== */
+
+/*
+   Her kan listen senere komme fra
+   din database/API.
+*/
 
 const orders = [
     1,2,3,4,5,6,7,8,9,10,
     11,12,13,14,15,16,17,18,19,20,
-    27,37,47,57,67,70
+    21,22,23,24,25,26,27,28,29,30,
+    31,32,33,34,35,36,37,38,39,40,
+    41,42,43,44,45,46,47,48,49,50,
+    57,67,70
 ];
 
+
 const tableNames = [
-    "A","B","C","D","E","F","G",
-    "H","I","J","K","L","M","N"
+    "A",
+    "B",
+    "C",
+    "D",
+    "E",
+    "F",
+    "G",
+    "H",
+    "I",
+    "J",
+    "K",
+    "L",
+    "M",
+    "N"
 ];
+
+
+/*
+   Alle tegnede forbindelser gemmes her.
+*/
 
 const connections = [];
 
+
+/*
+   Node der er valgt som start
+   på næste forbindelse.
+*/
+
 let selectedStart = null;
+
+
+/*
+   Bruges til placering af nye
+   bestillinger.
+*/
 
 let orderCounter = 0;
 
 
-/* -------------------------------------------------
-   TABELLER
--------------------------------------------------- */
+/* ==========================================
+   OPRET TABELLER
+   ========================================== */
 
-tableNames.forEach(name => {
+function createTables() {
 
-    const table = document.createElement("div");
+    tableNames.forEach(
+        (name, index) => {
 
-    table.className = "tableNode";
+            const table =
+                document.createElement("div");
 
-    table.textContent = "Tabel " + name;
+            table.className =
+                "tableNode";
 
-    table.dataset.type = "table";
-    table.dataset.id = name;
+            table.textContent =
+                "Tabel " + name;
 
-    table.addEventListener("click", () => {
-        nodeClicked(table);
-    });
+            table.dataset.type =
+                "table";
 
-    tablesContainer.appendChild(table);
-
-});
+            table.dataset.id =
+                name;
 
 
-/* -------------------------------------------------
-   ADD BESTILLING
--------------------------------------------------- */
+            /*
+               Startposition:
+               højre side af skærmen.
+            */
 
-document
-    .getElementById("addButton")
-    .addEventListener("click", () => {
+            table.style.left =
+                (
+                    canvas.clientWidth
+                    - 180
+                ) + "px";
 
-        modalBackground.style.display = "block";
+            table.style.top =
+                (
+                    20
+                    + index * 58
+                ) + "px";
+
+
+            addNodeEvents(table);
+
+            canvas.appendChild(table);
+
+            makeDraggable(table);
+        }
+    );
+}
+
+
+/* ==========================================
+   ÅBN MODAL
+   ========================================== */
+
+addButton.addEventListener(
+    "click",
+    () => {
+
+        modalBackground.style.display =
+            "block";
 
         search.value = "";
 
         showOrders("");
 
-        setTimeout(() => search.focus(), 50);
-
-    });
-
-
-/* -------------------------------------------------
-   SØGNING
--------------------------------------------------- */
-
-search.addEventListener("input", () => {
-
-    showOrders(search.value);
-
-});
-
-
-function showOrders(filter) {
-
-    results.innerHTML = "";
-
-    const filtered = orders.filter(number =>
-        number
-            .toString()
-            .includes(filter)
-    );
-
-    filtered.forEach(number => {
-
-        const row =
-            document.createElement("div");
-
-        row.className = "result";
-
-        row.textContent =
-            "Bestilling " + number;
-
-        row.addEventListener("click", () => {
-
-            addOrder(number);
-
-            modalBackground.style.display =
-                "none";
-
-        });
-
-        results.appendChild(row);
-
-    });
-
-}
-
-
-/* -------------------------------------------------
-   OPRET BESTILLING
--------------------------------------------------- */
-
-function addOrder(number) {
-
-    const order =
-        document.createElement("div");
-
-    order.className = "orderNode";
-
-    order.dataset.type = "order";
-    order.dataset.id = number;
-
-    order.innerHTML =
-        "Bestilling<br>" + number;
-
-
-    /*
-        Nye bestillinger placeres fra venstre
-        og forskydes lidt for hver bestilling.
-    */
-
-    order.style.left =
-        (100 + orderCounter * 130) + "px";
-
-    order.style.top =
-        (180 + (orderCounter % 4) * 130) + "px";
-
-    orderCounter++;
-
-
-    order.addEventListener("click", () => {
-
-        nodeClicked(order);
-
-    });
-
-
-    canvas.appendChild(order);
-
-}
-
-
-/* -------------------------------------------------
-   NODE KLIK
--------------------------------------------------- */
-
-function nodeClicked(node) {
-
-    /*
-        Første klik = start
-    */
-
-    if (!selectedStart) {
-
-        selectedStart = node;
-
-        node.classList.add("selected");
-
-        return;
-
+        setTimeout(
+            () => search.focus(),
+            50
+        );
     }
-
-
-    /*
-        Klikker man på samme node igen
-    */
-
-    if (selectedStart === node) {
-
-        selectedStart.classList.remove("selected");
-
-        selectedStart = null;
-
-        return;
-
-    }
-
-
-    /*
-        Regel:
-
-        En BESTILLING må IKKE komme efter
-        en TABEL.
-
-        table -> order er derfor ugyldig.
-    */
-
-    if (
-        selectedStart.dataset.type === "table" &&
-        node.dataset.type === "order"
-    ) {
-
-        alert(
-            "En bestilling må ikke komme efter en tabel."
-        );
-
-        selectedStart.classList.remove("selected");
-
-        selectedStart = null;
-
-        return;
-
-    }
-
-
-    createConnection(
-        selectedStart,
-        node
-    );
-
-
-    selectedStart.classList.remove("selected");
-
-    selectedStart = null;
-
-}
-
-
-/* -------------------------------------------------
-   FORBINDELSE
--------------------------------------------------- */
-
-function createConnection(start, end) {
-
-    connections.push({
-        start,
-        end
-    });
-
-    drawConnections();
-
-}
-
-
-/* -------------------------------------------------
-   TEGN ALLE FORBINDELSER
--------------------------------------------------- */
-
-function drawConnections() {
-
-    /*
-        Fjern gamle linjer
-    */
-
-    svg
-        .querySelectorAll(".connection")
-        .forEach(line => line.remove());
-
-
-    connections.forEach(connection => {
-
-        const startRect =
-            connection.start.getBoundingClientRect();
-
-        const endRect =
-            connection.end.getBoundingClientRect();
-
-        const canvasRect =
-            canvas.getBoundingClientRect();
-
-
-        const x1 =
-            startRect.left
-            - canvasRect.left
-            + startRect.width / 2;
-
-        const y1 =
-            startRect.top
-            - canvasRect.top
-            + startRect.height / 2;
-
-
-        const x2 =
-            endRect.left
-            - canvasRect.left
-            + endRect.width / 2;
-
-        const y2 =
-            endRect.top
-            - canvasRect.top
-            + endRect.height / 2;
-
-
-        const line =
-            document.createElementNS(
-                "http://www.w3.org/2000/svg",
-                "line"
-            );
-
-
-        line.setAttribute("x1", x1);
-        line.setAttribute("y1", y1);
-
-        line.setAttribute("x2", x2);
-        line.setAttribute("y2", y2);
-
-        line.setAttribute(
-            "stroke",
-            "#222"
-        );
-
-        line.setAttribute(
-            "stroke-width",
-            "2"
-        );
-
-        line.setAttribute(
-            "marker-end",
-            "url(#arrow)"
-        );
-
-        line.classList.add(
-            "connection"
-        );
-
-
-        svg.appendChild(line);
-
-    });
-
-}
-
-
-/* -------------------------------------------------
-   RESIZE
--------------------------------------------------- */
-
-window.addEventListener(
-    "resize",
-    drawConnections
 );
 
 
-/* -------------------------------------------------
-   LUK MODAL VED KLIK UDENFOR
--------------------------------------------------- */
+/* ==========================================
+   LUK MODAL
+   ========================================== */
+
+closeModal.addEventListener(
+    "click",
+    () => {
+
+        modalBackground.style.display =
+            "none";
+    }
+);
+
 
 modalBackground.addEventListener(
     "click",
@@ -627,11 +557,905 @@ modalBackground.addEventListener(
 
             modalBackground.style.display =
                 "none";
-
         }
-
     }
 );
+
+
+/* ==========================================
+   SØGNING
+   ========================================== */
+
+search.addEventListener(
+    "input",
+    () => {
+
+        showOrders(
+            search.value
+        );
+    }
+);
+
+
+/* ==========================================
+   VIS BESTILLINGER
+   ========================================== */
+
+function showOrders(filter) {
+
+    results.innerHTML = "";
+
+
+    const value =
+        filter.trim();
+
+
+    const filtered =
+        orders.filter(
+            number =>
+                number
+                    .toString()
+                    .includes(value)
+        );
+
+
+    if (filtered.length === 0) {
+
+        const noResults =
+            document.createElement("div");
+
+        noResults.className =
+            "noResults";
+
+        noResults.textContent =
+            "Ingen bestillinger fundet";
+
+        results.appendChild(
+            noResults
+        );
+
+        return;
+    }
+
+
+    filtered.forEach(
+        number => {
+
+            const row =
+                document.createElement("div");
+
+            row.className =
+                "result";
+
+            row.textContent =
+                "Bestilling " + number;
+
+
+            row.addEventListener(
+                "click",
+                () => {
+
+                    addOrder(number);
+
+                    modalBackground.style.display =
+                        "none";
+                }
+            );
+
+
+            results.appendChild(
+                row
+            );
+        }
+    );
+}
+
+
+/* ==========================================
+   OPRET BESTILLING
+   ========================================== */
+
+function addOrder(number) {
+
+    /*
+       Undgå samme bestilling flere gange.
+    */
+
+    const existing =
+        document.querySelector(
+            '.orderNode[data-id="' +
+            number +
+            '"]'
+        );
+
+
+    if (existing) {
+
+        alert(
+            "Bestilling " +
+            number +
+            " er allerede på tegningen."
+        );
+
+        return;
+    }
+
+
+    const order =
+        document.createElement("div");
+
+
+    order.className =
+        "orderNode";
+
+
+    order.dataset.type =
+        "order";
+
+
+    order.dataset.id =
+        number;
+
+
+    order.innerHTML =
+        "Bestilling<br>" +
+        number;
+
+
+    /*
+       Nye bestillinger starter
+       i venstre/midterste område.
+    */
+
+    const column =
+        orderCounter % 4;
+
+    const row =
+        Math.floor(
+            orderCounter / 4
+        );
+
+
+    order.style.left =
+        (
+            100
+            + column * 130
+        ) + "px";
+
+
+    order.style.top =
+        (
+            150
+            + row * 130
+        ) + "px";
+
+
+    orderCounter++;
+
+
+    addNodeEvents(order);
+
+
+    canvas.appendChild(order);
+
+
+    makeDraggable(order);
+}
+
+
+/* ==========================================
+   EVENTS PÅ NODE
+   ========================================== */
+
+function addNodeEvents(node) {
+
+    node.addEventListener(
+        "click",
+        () => {
+
+            /*
+               Et drag skal ikke også
+               registreres som et klik.
+            */
+
+            if (
+                node.dataset.justDragged
+                === "true"
+            ) {
+
+                return;
+            }
+
+
+            nodeClicked(node);
+        }
+    );
+}
+
+
+/* ==========================================
+   KLIK PÅ NODE
+   ========================================== */
+
+function nodeClicked(node) {
+
+    /*
+       Første klik vælger start.
+    */
+
+    if (!selectedStart) {
+
+        selectedStart =
+            node;
+
+        node.classList.add(
+            "selected"
+        );
+
+        return;
+    }
+
+
+    /*
+       Klik på samme node igen
+       annullerer valget.
+    */
+
+    if (
+        selectedStart === node
+    ) {
+
+        selectedStart.classList.remove(
+            "selected"
+        );
+
+        selectedStart = null;
+
+        return;
+    }
+
+
+    /*
+       Regel:
+
+       En bestilling må IKKE
+       komme efter en tabel.
+
+       Derfor er:
+
+       Tabel -> Bestilling
+
+       ikke tilladt.
+    */
+
+    if (
+        selectedStart.dataset.type
+            === "table"
+        &&
+        node.dataset.type
+            === "order"
+    ) {
+
+        alert(
+            "En bestilling må ikke komme efter en tabel."
+        );
+
+
+        selectedStart.classList.remove(
+            "selected"
+        );
+
+
+        selectedStart = null;
+
+        return;
+    }
+
+
+    createConnection(
+        selectedStart,
+        node
+    );
+
+
+    selectedStart.classList.remove(
+        "selected"
+    );
+
+
+    selectedStart = null;
+}
+
+
+/* ==========================================
+   OPRET FORBINDELSE
+   ========================================== */
+
+function createConnection(
+    start,
+    end
+) {
+
+    /*
+       Undgå identisk forbindelse
+       flere gange.
+    */
+
+    const exists =
+        connections.some(
+            connection =>
+                connection.start === start
+                &&
+                connection.end === end
+        );
+
+
+    if (exists) {
+        return;
+    }
+
+
+    connections.push({
+        start,
+        end
+    });
+
+
+    drawConnections();
+}
+
+
+/* ==========================================
+   FIND CENTRUM AF NODE
+   ========================================== */
+
+function getCenter(node) {
+
+    const rect =
+        node.getBoundingClientRect();
+
+    const canvasRect =
+        canvas.getBoundingClientRect();
+
+
+    return {
+
+        x:
+            rect.left
+            - canvasRect.left
+            + rect.width / 2,
+
+        y:
+            rect.top
+            - canvasRect.top
+            + rect.height / 2,
+
+        width:
+            rect.width,
+
+        height:
+            rect.height
+    };
+}
+
+
+/* ==========================================
+   FIND PUNKT PÅ KANTEN
+   ========================================== */
+
+function getEdgePoint(
+    node,
+    target
+) {
+
+    const center =
+        getCenter(node);
+
+    const targetCenter =
+        getCenter(target);
+
+
+    const dx =
+        targetCenter.x
+        - center.x;
+
+    const dy =
+        targetCenter.y
+        - center.y;
+
+
+    /*
+       Bestilling = cirkel
+    */
+
+    if (
+        node.dataset.type
+        === "order"
+    ) {
+
+        const radius =
+            center.width / 2;
+
+
+        const length =
+            Math.sqrt(
+                dx * dx
+                +
+                dy * dy
+            );
+
+
+        if (length === 0) {
+
+            return {
+                x: center.x,
+                y: center.y
+            };
+        }
+
+
+        return {
+
+            x:
+                center.x
+                +
+                dx / length
+                * radius,
+
+            y:
+                center.y
+                +
+                dy / length
+                * radius
+        };
+    }
+
+
+    /*
+       Tabel = rektangel
+    */
+
+    const halfWidth =
+        center.width / 2;
+
+    const halfHeight =
+        center.height / 2;
+
+
+    if (
+        dx === 0
+        &&
+        dy === 0
+    ) {
+
+        return {
+            x: center.x,
+            y: center.y
+        };
+    }
+
+
+    const scaleX =
+        dx !== 0
+            ? halfWidth /
+              Math.abs(dx)
+            : Infinity;
+
+
+    const scaleY =
+        dy !== 0
+            ? halfHeight /
+              Math.abs(dy)
+            : Infinity;
+
+
+    const scale =
+        Math.min(
+            scaleX,
+            scaleY
+        );
+
+
+    return {
+
+        x:
+            center.x
+            +
+            dx * scale,
+
+        y:
+            center.y
+            +
+            dy * scale
+    };
+}
+
+
+/* ==========================================
+   TEGN FORBINDELSER
+   ========================================== */
+
+function drawConnections() {
+
+    /*
+       Fjern eksisterende linjer.
+    */
+
+    svg
+        .querySelectorAll(
+            ".connection"
+        )
+        .forEach(
+            line =>
+                line.remove()
+        );
+
+
+    connections.forEach(
+        connection => {
+
+            /*
+               Start på kanten af
+               startnoden.
+            */
+
+            const start =
+                getEdgePoint(
+                    connection.start,
+                    connection.end
+                );
+
+
+            /*
+               Slut på kanten af
+               slutnoden.
+            */
+
+            const end =
+                getEdgePoint(
+                    connection.end,
+                    connection.start
+                );
+
+
+            const line =
+                document.createElementNS(
+                    "http://www.w3.org/2000/svg",
+                    "line"
+                );
+
+
+            line.setAttribute(
+                "x1",
+                start.x
+            );
+
+            line.setAttribute(
+                "y1",
+                start.y
+            );
+
+            line.setAttribute(
+                "x2",
+                end.x
+            );
+
+            line.setAttribute(
+                "y2",
+                end.y
+            );
+
+
+            line.setAttribute(
+                "stroke",
+                "#222"
+            );
+
+
+            line.setAttribute(
+                "stroke-width",
+                "2"
+            );
+
+
+            line.setAttribute(
+                "marker-end",
+                "url(#arrow)"
+            );
+
+
+            line.classList.add(
+                "connection"
+            );
+
+
+            svg.appendChild(
+                line
+            );
+        }
+    );
+}
+
+
+/* ==========================================
+   DRAG & DROP
+   ========================================== */
+
+function makeDraggable(node) {
+
+    let startX = 0;
+    let startY = 0;
+
+    let offsetX = 0;
+    let offsetY = 0;
+
+    let dragging = false;
+
+
+    node.addEventListener(
+        "pointerdown",
+        event => {
+
+            /*
+               Kun venstre museknap.
+
+               Touch har button = 0.
+            */
+
+            if (
+                event.button !== 0
+            ) {
+                return;
+            }
+
+
+            startX =
+                event.clientX;
+
+            startY =
+                event.clientY;
+
+
+            const rect =
+                node.getBoundingClientRect();
+
+
+            offsetX =
+                event.clientX
+                - rect.left;
+
+
+            offsetY =
+                event.clientY
+                - rect.top;
+
+
+            dragging = false;
+
+
+            node.setPointerCapture(
+                event.pointerId
+            );
+        }
+    );
+
+
+    node.addEventListener(
+        "pointermove",
+        event => {
+
+            /*
+               Ingen drag hvis pointeren
+               ikke er fanget.
+            */
+
+            if (
+                !node.hasPointerCapture(
+                    event.pointerId
+                )
+            ) {
+
+                return;
+            }
+
+
+            /*
+               Først efter 4 pixels
+               betragtes det som drag.
+            */
+
+            if (!dragging) {
+
+                const distanceX =
+                    Math.abs(
+                        event.clientX
+                        - startX
+                    );
+
+                const distanceY =
+                    Math.abs(
+                        event.clientY
+                        - startY
+                    );
+
+
+                if (
+                    distanceX > 4
+                    ||
+                    distanceY > 4
+                ) {
+
+                    dragging = true;
+                }
+            }
+
+
+            if (!dragging) {
+                return;
+            }
+
+
+            const canvasRect =
+                canvas.getBoundingClientRect();
+
+
+            let x =
+                event.clientX
+                - canvasRect.left
+                - offsetX;
+
+
+            let y =
+                event.clientY
+                - canvasRect.top
+                - offsetY;
+
+
+            /*
+               Hold noden indenfor
+               skærmen.
+            */
+
+            x =
+                Math.max(
+                    0,
+                    Math.min(
+                        x,
+                        canvas.clientWidth
+                        - node.offsetWidth
+                    )
+                );
+
+
+            y =
+                Math.max(
+                    0,
+                    Math.min(
+                        y,
+                        canvas.clientHeight
+                        - node.offsetHeight
+                    )
+                );
+
+
+            node.style.left =
+                x + "px";
+
+
+            node.style.top =
+                y + "px";
+
+
+            /*
+               Opdater pile live.
+            */
+
+            drawConnections();
+        }
+    );
+
+
+    node.addEventListener(
+        "pointerup",
+        event => {
+
+            if (dragging) {
+
+                /*
+                   Forhindrer click-eventen
+                   efter drag.
+                */
+
+                node.dataset.justDragged =
+                    "true";
+
+
+                setTimeout(
+                    () => {
+
+                        node.dataset.justDragged =
+                            "false";
+
+                    },
+                    0
+                );
+            }
+
+
+            if (
+                node.hasPointerCapture(
+                    event.pointerId
+                )
+            ) {
+
+                node.releasePointerCapture(
+                    event.pointerId
+                );
+            }
+
+
+            dragging = false;
+        }
+    );
+}
+
+
+/* ==========================================
+   RESIZE
+   ========================================== */
+
+window.addEventListener(
+    "resize",
+    () => {
+
+        drawConnections();
+    }
+);
+
+
+/* ==========================================
+   ESC
+   ========================================== */
+
+document.addEventListener(
+    "keydown",
+    event => {
+
+        if (
+            event.key === "Escape"
+        ) {
+
+            /*
+               Luk modal.
+            */
+
+            modalBackground.style.display =
+                "none";
+
+
+            /*
+               Annuller valgt forbindelse.
+            */
+
+            if (selectedStart) {
+
+                selectedStart.classList.remove(
+                    "selected"
+                );
+
+                selectedStart =
+                    null;
+            }
+        }
+    }
+);
+
+
+/* ==========================================
+   START
+   ========================================== */
+
+createTables();
 
 </script>
 
