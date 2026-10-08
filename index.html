@@ -2,202 +2,53 @@
 <html lang="da">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Bestillingsflow</title>
 <style>
-*{box-sizing:border-box}
-body{margin:0;font-family:Arial,sans-serif;background:white;overflow:hidden}
-#canvas{position:relative;width:100vw;height:100vh;overflow:hidden;background:#fff;touch-action:none}
-#orderButtons{position:absolute;top:20px;left:20px;z-index:30;display:flex;gap:10px}
-#orderButtons button{padding:13px 18px;background:#1677ff;color:#fff;border:0;border-radius:6px;font-size:15px;font-weight:bold;cursor:pointer}
-#orderButtons button:hover{background:#0958d9}
-.node{position:absolute;display:flex;align-items:center;justify-content:center;text-align:center;border:2px solid #222;cursor:grab;user-select:none;touch-action:none;z-index:10}
-.node:active{cursor:grabbing}
-.orderNode{width:100px;height:100px;border-radius:50%;font-weight:bold}
-.existingOrder{background:#e0f2fe}
-.newOrder{background:#93c5fd}
-.tableNode{width:150px;height:48px;background:#c9f2bd}
-.node.selected{outline:4px solid #1677ff;outline-offset:4px}
-#connections{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1}
-.modalBackground{position:fixed;inset:0;background:rgba(0,0,0,.16);display:none;z-index:100}
-.modal{position:absolute;top:85px;left:25px;width:350px;max-width:calc(100vw - 50px);padding:20px;background:#fff;border:1px solid #ccc;border-radius:8px;box-shadow:0 8px 30px #0003}
-.modalHeader{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
-.modalHeader h2{font-size:20px;margin:0}
-.closeModal{border:0;background:transparent;font-size:25px;cursor:pointer}
-.modal input{width:100%;padding:12px;border:1px solid #aaa;border-radius:5px;font-size:16px}
-.modal input:focus{outline:2px solid #93c5fd;border-color:#1677ff}
-#results{margin-top:10px;max-height:300px;overflow-y:auto;border:1px solid #eee;border-radius:5px}
-.result{padding:12px;cursor:pointer;border-bottom:1px solid #eee}
-.result:hover{background:#e8f2ff}
-.noResults{padding:15px;color:#777;text-align:center}
-.modalActions{display:flex;justify-content:flex-end;gap:10px;margin-top:20px}
-.modalActions button{padding:10px 13px;border:1px solid #ccc;border-radius:5px;background:#fff;cursor:pointer}
-.modalActions .primary{background:#1677ff;color:white;border-color:#1677ff}
+*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:white}#canvas{position:relative;width:100vw;height:100vh;overflow:auto;background:white;touch-action:none}#buttons{position:fixed;top:20px;left:20px;z-index:30;display:flex;gap:10px}button{cursor:pointer;font:inherit}#buttons button,.primary{background:#1677ff;color:white;border:0;border-radius:6px;padding:12px 17px;font-weight:bold}#buttons button:hover,.primary:hover{background:#0958d9}.node{position:absolute;display:flex;align-items:center;justify-content:center;text-align:center;border:2px solid #222;cursor:grab;user-select:none;touch-action:none;z-index:5}.node:active{cursor:grabbing}.orderNode{width:104px;height:104px;border-radius:50%;font-weight:bold}.existingOrder{background:#e0f2fe}.newOrder{background:#93c5fd}.tableNode{width:150px;height:45px;background:#c9f2bd}.selected{outline:4px solid #1677ff;outline-offset:4px}#connections{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1}.overlay{position:fixed;inset:0;display:none;background:rgba(0,0,0,.2);z-index:50}.modal{position:absolute;top:85px;left:25px;width:min(360px,calc(100vw - 50px));background:white;border:1px solid #ccc;border-radius:8px;padding:20px;box-shadow:0 8px 30px #0003}.modalHeader{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}.modal h2{font-size:20px;margin:0}.close{background:transparent;border:0;font-size:26px}.modal input{width:100%;padding:12px;font-size:16px;border:1px solid #aaa;border-radius:5px}.results{margin-top:10px;max-height:300px;overflow:auto}.result{padding:11px;border-bottom:1px solid #eee;cursor:pointer}.result:hover{background:#e8f2ff}.actions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px}.actions button{padding:10px;border-radius:5px;border:1px solid #aaa;background:#fff}.actions .primary{border:0;background:#1677ff;color:#fff}#hint{position:fixed;bottom:12px;left:20px;color:#666;font-size:13px;pointer-events:none;z-index:20}
 </style>
 </head>
 <body>
 <div id="canvas">
-  <div id="orderButtons">
-    <button id="existingOrderButton" type="button">+ Eksisterende bestilling</button>
-    <button id="newOrderButton" type="button">+ Ny bestilling</button>
-  </div>
-  <svg id="connections" aria-hidden="true">
-    <defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L0,6 L9,3 z" fill="#222"/></marker></defs>
-  </svg>
+  <div id="buttons"><button id="existingButton">+ Eksisterende bestilling</button><button id="newButton">+ Ny bestilling</button></div>
+  <svg id="connections" aria-hidden="true"><defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L0,6 L9,3 z" fill="#222"/></marker></defs></svg>
 </div>
-<div id="existingModalBackground" class="modalBackground">
-  <div class="modal">
-    <div class="modalHeader"><h2>Vælg bestilling</h2><button class="closeModal" data-close="existingModalBackground" aria-label="Luk">×</button></div>
-    <input id="search" type="text" placeholder="Søg efter bestillingsnummer..." autocomplete="off">
-    <div id="results"></div>
-  </div>
-</div>
-<div id="newModalBackground" class="modalBackground">
-  <div class="modal">
-    <div class="modalHeader"><h2>Ny bestilling</h2><button class="closeModal" data-close="newModalBackground" aria-label="Luk">×</button></div>
-    <input id="newOrderNumber" type="number" min="1" step="1" placeholder="Indtast bestillingsnummer">
-    <div class="modalActions"><button id="cancelNewOrder" type="button">Annuller</button><button id="createNewOrder" class="primary" type="button">Opret bestilling</button></div>
-  </div>
-</div>
+<div id="hint">Klik på start og derefter slut for at forbinde · Træk for at flytte · Esc annullerer</div>
+<div id="existingOverlay" class="overlay"><div class="modal"><div class="modalHeader"><h2>Eksisterende bestilling</h2><button class="close" data-close="existingOverlay">×</button></div><input id="search" placeholder="Søg efter bestillingsnummer" autocomplete="off"><div id="results" class="results"></div></div></div>
+<div id="newOverlay" class="overlay"><div class="modal"><div class="modalHeader"><h2>Ny bestilling</h2><button class="close" data-close="newOverlay">×</button></div><input id="newNumber" type="number" min="1" step="1" placeholder="Indtast bestillingsnummer"><div class="actions"><button data-close="newOverlay">Annuller</button><button id="createButton" class="primary">Opret bestilling</button></div></div></div>
 <script>
 'use strict';
-const canvas = document.getElementById('canvas');
-const svg = document.getElementById('connections');
-const search = document.getElementById('search');
-const results = document.getElementById('results');
-const newOrderNumber = document.getElementById('newOrderNumber');
-const orders = Array.from({length:50},(_,i)=>i+1).concat([57,67,70]); // Eksempeldata: erstat evt. med API-data
-const tableNames = 'ABCDEFGHIJKLMN'.split('');
-const connections = [];
-let selectedStart = null;
-let orderCounter = 0;
-
-function openModal(id, input){
-  document.getElementById(id).style.display='block';
-  if(input){input.value='';input.focus();}
-}
+const canvas=document.getElementById('canvas');
+const svg=document.getElementById('connections');
+const search=document.getElementById('search');
+const results=document.getElementById('results');
+const newNumber=document.getElementById('newNumber');
+const tableNames=['KTOTB210','KTOTB211','KTOTB212','KTOTB213','KTOTB214','KTOTB215','KTOTB216','KTOTB217','KTOTB218','KTOTB219','KTOTB21A','KTOTB21B','KTOTB21C'];
+// Erstat listen med bestillingsnumre fra dit API, når det bliver tilsluttet.
+const orders=[...Array.from({length:50},(_,i)=>i+1),57,67,70];
+const connections=[];
+let selectedStart=null;
+let orderCounter=0;
+function openModal(id){document.getElementById(id).style.display='block';}
 function closeModal(id){document.getElementById(id).style.display='none';}
-document.getElementById('existingOrderButton').addEventListener('click',()=>{
-  openModal('existingModalBackground',search);showOrders('');
-});
-document.getElementById('newOrderButton').addEventListener('click',()=>openModal('newModalBackground',newOrderNumber));
-document.getElementById('cancelNewOrder').addEventListener('click',()=>closeModal('newModalBackground'));
-document.querySelectorAll('.closeModal').forEach(button=>button.addEventListener('click',()=>closeModal(button.dataset.close)));
-document.querySelectorAll('.modalBackground').forEach(modal=>modal.addEventListener('click',e=>{if(e.target===modal)closeModal(modal.id);}));
-document.addEventListener('keydown',e=>{
-  if(e.key==='Escape'){
-    closeModal('existingModalBackground');closeModal('newModalBackground');
-    if(selectedStart){selectedStart.classList.remove('selected');selectedStart=null;}
-  }
-});
+document.getElementById('existingButton').onclick=()=>{search.value='';showOrders('');openModal('existingOverlay');search.focus();};
+document.getElementById('newButton').onclick=()=>{newNumber.value='';openModal('newOverlay');newNumber.focus();};
+document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',()=>closeModal(b.dataset.close)));
+document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('pointerdown',e=>{if(e.target===o)closeModal(o.id);}));
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){document.querySelectorAll('.overlay').forEach(o=>closeModal(o.id));clearSelection();}});
 search.addEventListener('input',()=>showOrders(search.value));
-function showOrders(filter){
-  results.replaceChildren();
-  const matches=orders.filter(number=>String(number).includes(filter.trim()));
-  if(!matches.length){const empty=document.createElement('div');empty.className='noResults';empty.textContent='Ingen bestillinger fundet';results.appendChild(empty);return;}
-  for(const number of matches){
-    const row=document.createElement('div');row.className='result';row.textContent='Bestilling '+number;
-    row.addEventListener('click',()=>{if(addOrder(number,false))closeModal('existingModalBackground');});
-    results.appendChild(row);
-  }
-}
-function submitNewOrder(){
-  const value=newOrderNumber.value.trim();const number=Number(value);
-  if(!value||!Number.isSafeInteger(number)||number<=0){alert('Indtast et gyldigt positivt heltal.');return;}
-  if(addOrder(number,true))closeModal('newModalBackground');
-}
-document.getElementById('createNewOrder').addEventListener('click',submitNewOrder);
-newOrderNumber.addEventListener('keydown',e=>{if(e.key==='Enter')submitNewOrder();});
-
-function addOrder(number,isNew){
-  if([...canvas.querySelectorAll('.orderNode')].some(node=>node.dataset.id===String(number))){
-    alert('Bestilling '+number+' findes allerede på tegningen.');return false;
-  }
-  const node=document.createElement('div');
-  node.className='node orderNode '+(isNew?'newOrder':'existingOrder');
-  node.dataset.type='order';node.dataset.id=String(number);
-  node.innerHTML='Bestilling<br>'+number;
-  const column=orderCounter%4,row=Math.floor(orderCounter/4);
-  node.style.left=(100+column*130)+'px';node.style.top=(150+row*130)+'px';orderCounter++;
-  addNodeEvents(node);canvas.appendChild(node);makeDraggable(node);
-  return true;
-}
-function createTables(){
-  tableNames.forEach((name,index)=>{
-    const node=document.createElement('div');node.className='node tableNode';node.textContent='Tabel '+name;
-    node.dataset.type='table';node.dataset.id=name;
-    node.style.left=Math.max(0,canvas.clientWidth-180)+'px';node.style.top=(20+index*58)+'px';
-    addNodeEvents(node);canvas.appendChild(node);makeDraggable(node);
-  });
-}
-function addNodeEvents(node){
-  node.addEventListener('click',()=>{
-    if(node.dataset.justDragged==='true')return;
-    nodeClicked(node);
-  });
-}
-function nodeClicked(node){
-  if(!selectedStart){selectedStart=node;node.classList.add('selected');return;}
-  if(selectedStart===node){selectedStart.classList.remove('selected');selectedStart=null;return;}
-  const start=selectedStart;start.classList.remove('selected');selectedStart=null;
-  if(start.dataset.type==='table'&&node.dataset.type==='order'){
-    alert('En bestilling må ikke komme efter en tabel.');return;
-  }
-  if(connections.some(c=>c.start===start&&c.end===node))return;
-  connections.push({start,end:node});drawConnections();
-}
-function getCenter(node){
-  const rect=node.getBoundingClientRect(),base=canvas.getBoundingClientRect();
-  return {x:rect.left-base.left+rect.width/2,y:rect.top-base.top+rect.height/2,width:rect.width,height:rect.height};
-}
-function getEdgePoint(node,target){
-  const a=getCenter(node),b=getCenter(target),dx=b.x-a.x,dy=b.y-a.y;
-  if(!dx&&!dy)return {x:a.x,y:a.y};
-  if(node.dataset.type==='order'){
-    const length=Math.hypot(dx,dy),radius=a.width/2;
-    return {x:a.x+dx/length*radius,y:a.y+dy/length*radius};
-  }
-  const scale=Math.min(dx? (a.width/2)/Math.abs(dx):Infinity,dy?(a.height/2)/Math.abs(dy):Infinity);
-  return {x:a.x+dx*scale,y:a.y+dy*scale};
-}
-function drawConnections(){
-  svg.querySelectorAll('.connection').forEach(line=>line.remove());
-  for(const connection of connections){
-    const start=getEdgePoint(connection.start,connection.end),end=getEdgePoint(connection.end,connection.start);
-    const line=document.createElementNS('http://www.w3.org/2000/svg','line');
-    line.setAttribute('x1',start.x);line.setAttribute('y1',start.y);
-    line.setAttribute('x2',end.x);line.setAttribute('y2',end.y);
-    line.setAttribute('stroke','#222');line.setAttribute('stroke-width','2');
-    line.setAttribute('marker-end','url(#arrow)');line.classList.add('connection');svg.appendChild(line);
-  }
-}
-function makeDraggable(node){
-  let activePointer=null,startX=0,startY=0,offsetX=0,offsetY=0,dragging=false;
-  node.addEventListener('pointerdown',e=>{
-    if(e.button!==0)return;
-    const rect=node.getBoundingClientRect();
-    activePointer=e.pointerId;startX=e.clientX;startY=e.clientY;
-    offsetX=e.clientX-rect.left;offsetY=e.clientY-rect.top;dragging=false;
-    node.setPointerCapture(e.pointerId);
-  });
-  node.addEventListener('pointermove',e=>{
-    if(activePointer!==e.pointerId)return;
-    if(!dragging&&Math.hypot(e.clientX-startX,e.clientY-startY)>4)dragging=true;
-    if(!dragging)return;
-    const rect=canvas.getBoundingClientRect();
-    const x=Math.max(0,Math.min(e.clientX-rect.left-offsetX,Math.max(0,canvas.clientWidth-node.offsetWidth)));
-    const y=Math.max(0,Math.min(e.clientY-rect.top-offsetY,Math.max(0,canvas.clientHeight-node.offsetHeight)));
-    node.style.left=x+'px';node.style.top=y+'px';drawConnections();
-  });
-  function finish(e){
-    if(activePointer!==e.pointerId)return;
-    if(dragging){node.dataset.justDragged='true';setTimeout(()=>node.dataset.justDragged='false',0);}
-    activePointer=null;dragging=false;
-    if(node.hasPointerCapture(e.pointerId))node.releasePointerCapture(e.pointerId);
-  }
-  node.addEventListener('pointerup',finish);
-  node.addEventListener('pointercancel',finish);
-}
+function showOrders(value){results.replaceChildren();const filtered=orders.filter(n=>String(n).includes(value.trim()));if(!filtered.length){results.textContent='Ingen bestillinger fundet';return;}filtered.forEach(n=>{const row=document.createElement('div');row.className='result';row.textContent='Bestilling '+n;row.onclick=()=>{if(addOrder(n,false))closeModal('existingOverlay');};results.appendChild(row);});}
+function submitNew(){const s=newNumber.value.trim(),n=Number(s);if(!s||!Number.isSafeInteger(n)||n<=0){alert('Indtast et gyldigt positivt heltal.');return;}if(addOrder(n,true))closeModal('newOverlay');}
+document.getElementById('createButton').onclick=submitNew;
+newNumber.addEventListener('keydown',e=>{if(e.key==='Enter')submitNew();});
+function addOrder(number,isNew){if([...document.querySelectorAll('.orderNode')].some(el=>el.dataset.id===String(number))){alert('Bestilling '+number+' findes allerede på tegningen.');return false;}const node=document.createElement('div');node.className='node orderNode '+(isNew?'newOrder':'existingOrder');node.dataset.type='order';node.dataset.id=String(number);node.innerHTML='Bestilling<br>'+number;node.style.left=(100+(orderCounter%4)*135)+'px';node.style.top=(150+Math.floor(orderCounter/4)*135)+'px';orderCounter++;canvas.appendChild(node);attachNode(node);return true;}
+function createTables(){tableNames.forEach((name,i)=>{const node=document.createElement('div');node.className='node tableNode';node.textContent=name;node.dataset.type='table';node.dataset.id=name;node.style.left=Math.max(0,canvas.clientWidth-180)+'px';node.style.top=(20+i*54)+'px';canvas.appendChild(node);attachNode(node);});}
+function clearSelection(){if(selectedStart)selectedStart.classList.remove('selected');selectedStart=null;}
+function nodeClicked(node){if(!selectedStart){selectedStart=node;node.classList.add('selected');return;}if(selectedStart===node){clearSelection();return;}if(selectedStart.dataset.type==='table'&&node.dataset.type==='order'){alert('En bestilling må ikke komme efter en tabel.');clearSelection();return;}if(connections.some(c=>c.start===selectedStart&&c.end===node)){clearSelection();return;}connections.push({start:selectedStart,end:node});clearSelection();drawConnections();}
+function attachNode(node){let down=null;let suppressClick=false;node.addEventListener('pointerdown',e=>{if(e.button!==0)return;const r=node.getBoundingClientRect();down={pointerId:e.pointerId,startX:e.clientX,startY:e.clientY,offsetX:e.clientX-r.left,offsetY:e.clientY-r.top,moved:false};node.setPointerCapture(e.pointerId);});node.addEventListener('pointermove',e=>{if(!down||down.pointerId!==e.pointerId)return;if(Math.hypot(e.clientX-down.startX,e.clientY-down.startY)>4)down.moved=true;if(!down.moved)return;const r=canvas.getBoundingClientRect();const x=e.clientX-r.left+canvas.scrollLeft-down.offsetX;const y=e.clientY-r.top+canvas.scrollTop-down.offsetY;node.style.left=Math.max(0,Math.min(x,canvas.scrollWidth-node.offsetWidth))+'px';node.style.top=Math.max(0,Math.min(y,canvas.scrollHeight-node.offsetHeight))+'px';drawConnections();});node.addEventListener('pointerup',e=>{if(!down||down.pointerId!==e.pointerId)return;const moved=down.moved;down=null;if(node.hasPointerCapture(e.pointerId))node.releasePointerCapture(e.pointerId);if(moved){suppressClick=true;setTimeout(()=>{suppressClick=false;},0);}});node.addEventListener('pointercancel',()=>{down=null;});node.addEventListener('click',()=>{if(!suppressClick)nodeClicked(node);});}
+function center(node){const r=node.getBoundingClientRect(),c=canvas.getBoundingClientRect();return{x:r.left-c.left+canvas.scrollLeft+r.width/2,y:r.top-c.top+canvas.scrollTop+r.height/2,w:r.width,h:r.height};}
+function edge(node,target){const a=center(node),b=center(target),dx=b.x-a.x,dy=b.y-a.y;if(dx===0&&dy===0)return{x:a.x,y:a.y};if(node.dataset.type==='order'){const length=Math.hypot(dx,dy);return{x:a.x+dx/length*a.w/2,y:a.y+dy/length*a.h/2};}const t=Math.min(dx===0?Infinity:(a.w/2)/Math.abs(dx),dy===0?Infinity:(a.h/2)/Math.abs(dy));return{x:a.x+dx*t,y:a.y+dy*t};}
+function drawConnections(){svg.querySelectorAll('.connection').forEach(n=>n.remove());connections.forEach(({start,end})=>{const a=edge(start,end),b=edge(end,start);const line=document.createElementNS('http://www.w3.org/2000/svg','line');for(const [k,v] of Object.entries({x1:a.x,y1:a.y,x2:b.x,y2:b.y,stroke:'#222','stroke-width':2,'marker-end':'url(#arrow)'}))line.setAttribute(k,v);line.classList.add('connection');svg.appendChild(line);});}
 window.addEventListener('resize',drawConnections);
 createTables();
 </script>
